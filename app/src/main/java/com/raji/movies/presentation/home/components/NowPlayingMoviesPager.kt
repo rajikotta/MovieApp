@@ -33,8 +33,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -49,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.raji.movies.domain.Movie
 import com.raji.movies.domain.toUiText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalAnimationApi::class, ExperimentalLayoutApi::class)
@@ -73,6 +76,7 @@ fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>,
 
 
                 Spacer(modifier = Modifier.height(34.dp))
+                var animationFinished by remember { mutableStateOf(false) }
 
                 HorizontalPager(
                     state = pagerState,
@@ -84,8 +88,15 @@ fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>,
                     ),
                     pageSpacing = 16.dp
                 ) { page: Int ->
-                    selectedIndex = page
 
+                    val isSelected = pagerState.currentPage == page
+
+                    LaunchedEffect(isSelected) {
+                        if (isSelected) {
+                            delay(500) // Match animation duration
+                            selectedIndex = page
+                        }
+                    }
                     AnimatedContent(
                         targetState = pagerState.currentPage == page,
                         transitionSpec = {
@@ -117,6 +128,7 @@ fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>,
                     }
                 }
 
+
                 Row(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Icon(
                         imageVector = Icons.Default.Star, tint = Color(
@@ -133,18 +145,26 @@ fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>,
                     text = movieList[selectedIndex].title,
                     style = MaterialTheme.typography.titleMedium
                 )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
                     items(movieList[selectedIndex].genres) { genre ->
                         Text(
                             text =
                             genre.toUiText().asString(LocalContext.current),
                             modifier = Modifier
-                                .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)) // Outline
+                                .border(
+                                    1.dp,
+                                    Color.LightGray,
+                                    RoundedCornerShape(16.dp)
+                                ) // Outline
                                 .padding(10.dp)
 
                         )
                     }
                 }
+
             }
 
         } else {
