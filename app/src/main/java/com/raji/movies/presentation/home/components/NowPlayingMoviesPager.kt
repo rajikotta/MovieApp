@@ -1,11 +1,17 @@
 package com.raji.movies.presentation.home.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,8 +33,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,22 +46,24 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import coil3.compose.AsyncImage
 import com.raji.movies.domain.Movie
 import com.raji.movies.domain.toUiText
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
 
+@OptIn(ExperimentalAnimationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>, title: String) {
     val pagerState = rememberPagerState(pageCount = { movieList.size })
-    var selectedIndex = 0
+    var selectedIndex by remember { mutableIntStateOf(0) }
     Box(
         Modifier.padding(vertical = 20.dp),
     ) {
         if (movieList.isNotEmpty()) {
-            Text(text = title, style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = title, style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -62,8 +73,10 @@ fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>,
 
 
                 Spacer(modifier = Modifier.height(34.dp))
+
                 HorizontalPager(
-                    state = pagerState, modifier = Modifier.fillMaxWidth(),
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 32.dp),
                     flingBehavior = PagerDefaults.flingBehavior(
                         state = pagerState,
@@ -73,39 +86,38 @@ fun NowPlayingMoviesPager(modifier: Modifier = Modifier, movieList: List<Movie>,
                 ) { page: Int ->
                     selectedIndex = page
 
-
-                    AsyncImage(
-
-                        model = movieList[page].posterUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.FillWidth,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(450.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                enabled = true,
-                            ) {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(page)
+                    AnimatedContent(
+                        targetState = pagerState.currentPage == page,
+                        transitionSpec = {
+                            scaleIn(initialScale = 0.75f) togetherWith
+                                    scaleOut(targetScale = 0.75f)
+                        },
+                    ) { isSelected ->
+                        AsyncImage(
+                            model = movieList[page].posterUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(450.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    enabled = true,
+                                ) {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(page)
+                                    }
                                 }
-                            }
-                            .graphicsLayer {
-                                val pageOffSet = (
-                                        (pagerState.currentPage - page) + pagerState
-                                            .currentPageOffsetFraction
-                                        ).absoluteValue
-                                scaleY = lerp(
-                                    start = 0.75f,
-                                    stop = 1f,
-                                    fraction = 1f - pageOffSet.coerceIn(0f, 1f)
-                                )
-                            }
-                            .clip(RoundedCornerShape(CornerSize(16.dp)))
-                    )
+                                .graphicsLayer {
+                                    scaleY = if (isSelected) 1f else 0.75f
+                                }
+                                .clip(RoundedCornerShape(CornerSize(16.dp)))
+                        )
+                    }
                 }
-                Row {
+
+                Row(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Icon(
                         imageVector = Icons.Default.Star, tint = Color(
                             0xFFFFFF00
