@@ -1,4 +1,4 @@
-package com.raji.movies.data.network
+package com.raji.movies.data.remote.network
 
 interface AppError
 
@@ -6,6 +6,8 @@ sealed interface DataError : AppError {
     enum class Remote : DataError {
         REQUEST_TIME_OUT, TOO_MANY_REQUESTS, NO_INTERNET, SERVER, SERIALIZATION, UNKNOWN
     }
+
+    data class ApiError(val errorMessage: String) : DataError
 
     enum class Local : DataError {
         DISK_FULL, UNKNOWN
